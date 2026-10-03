@@ -64,8 +64,20 @@ Profesjonalne, responsywne portfolio stworzone z wykorzystaniem najnowszych tech
 - ✅ **Real-time validation** - Walidacja formularza po stronie klienta i serwera
 - ✅ **Dual email system** - Powiadomienia dla administratora + auto-reply dla użytkownika
 - ✅ **Beautiful email templates** - Responsywne, profesjonalne szablony HTML
-- ✅ **Security first** - Sanityzacja HTML, rate limiting ready, XSS protection
+- ✅ **Advanced anti-spam** - Honeypot, rate limiting, time-based protection, spam detection
+- ✅ **Security first** - Sanityzacja HTML, XSS protection, bot detection
 - ✅ **User feedback** - Loading states, success/error messages, UX animations
+
+### 🛡️ Ochrona Anty-Spamowa
+
+| Mechanizm | Opis |
+|-----------|------|
+| **Honeypot Field** | Ukryte pole widoczne tylko dla botów |
+| **Rate Limiting** | Max 3 wiadomości/godzinę na IP |
+| **Time-Based Protection** | Minimum 3 sekundy na wypełnienie formularza |
+| **Interaction Tracking** | Wykrywanie rzeczywistych interakcji użytkownika |
+| **Spam Detection** | Heurystyki: nadmiar URLs, słowa kluczowe, CAPS |
+| **Content Analysis** | Detekcja powtarzających się znaków i podejrzanych wzorców |
 
 ---
 
@@ -220,7 +232,8 @@ portfolio_next/
 │   ├── layout.tsx                # Root layout
 │   └── page.tsx                  # Strona główna
 ├── lib/
-│   └── resend.ts                 # Konfiguracja Resend
+│   ├── resend.ts                 # Konfiguracja Resend
+│   └── anti-spam.ts              # Rate limiting i detekcja spamu
 ├── public/
 │   └── cv/                       # CV do pobrania
 ├── .env.local                    # Zmienne środowiskowe (nie w repo)
@@ -292,6 +305,11 @@ admin      do użytkownika
 - ✅ **Type Safety** - TypeScript type guards
 - ✅ **Error Handling** - Graceful error handling z logowaniem
 - ✅ **POST Only** - Endpoint akceptuje tylko metody POST
+- ✅ **Rate Limiting** - Ochrona przed nadużyciami (3 req/h na IP)
+- ✅ **Honeypot Trap** - Ukryte pola łapiące boty
+- ✅ **Time-Based Checks** - Wykrywanie zbyt szybkich zgłoszeń
+- ✅ **Spam Heuristics** - Inteligentna detekcja spamu
+- ✅ **Bot Detection** - Wielowarstwowa ochrona przed automatami
 
 ### Email Templates
 

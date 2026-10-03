@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resend } from '@/lib/resend';
+import { checkRateLimit, detectSpam } from '@/lib/anti-spam';
 
 interface ContactFormData {
   name: string;
   email: string;
   message: string;
+  timestamp?: number;
+  submittedAt?: number;
 }
 
 function validateContactForm(data: unknown): data is ContactFormData {
@@ -12,7 +15,7 @@ function validateContactForm(data: unknown): data is ContactFormData {
     return false;
   }
 
-  const { name, email, message } = data as Record<string, unknown>;
+  const { name, email, message, timestamp, submittedAt } = data as Record<string, unknown>;
 
   if (typeof name !== 'string' || name.trim().length === 0 || name.length > 100) {
     return false;
@@ -23,6 +26,14 @@ function validateContactForm(data: unknown): data is ContactFormData {
   }
 
   if (typeof message !== 'string' || message.trim().length === 0 || message.length > 5000) {
+    return false;
+  }
+
+  if (timestamp !== undefined && typeof timestamp !== 'number') {
+    return false;
+  }
+
+  if (submittedAt !== undefined && typeof submittedAt !== 'number') {
     return false;
   }
 
@@ -45,6 +56,23 @@ function sanitizeHtml(text: string): string {
 
 export async function POST(request: NextRequest) {
   try {
+    // Pobierz IP klienta z nagłówków Vercel
+    const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+                     request.headers.get('x-real-ip') || 'unknown';
+
+    // Sprawdź rate limit (async z Upstash Redis)
+    const rateLimitResult = await checkRateLimit(clientIp);
+    if (!rateLimitResult.allowed) {
+      console.warn(`Rate limit exceeded for IP: ${clientIp}`);
+      return NextResponse.json(
+        {
+          error: `Zbyt wiele prób. Spróbuj ponownie za ${rateLimitResult.resetIn} minut.`,
+          retryAfter: rateLimitResult.resetIn
+        },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
 
     if (!validateContactForm(body)) {
@@ -54,7 +82,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { name, email, message } = body;
+    const { name, email, message, timestamp, submittedAt } = body;
+
+    if (timestamp && submittedAt) {
+      const timeDiff = submittedAt - timestamp;
+      if (timeDiff < 3000) {
+        console.warn(`Suspicious fast submission: ${timeDiff}ms from IP: ${clientIp}`);
+        return NextResponse.json(
+          { error: 'Nieprawidłowe dane formularza' },
+          { status: 400 }
+        );
+      }
+    }
+
+    const spamCheck = detectSpam({ name, email, message });
+    if (spamCheck.isSpam) {
+      console.warn(`Spam detected: ${spamCheck.reason} from IP: ${clientIp}`);
+      return NextResponse.json(
+        { error: 'Wiadomość została odrzucona. Jeśli uważasz, że to błąd, skontaktuj się bezpośrednio.' },
+        { status: 400 }
+      );
+    }
 
     const sanitizedName = sanitizeHtml(name.trim());
     const sanitizedMessage = sanitizeHtml(message.trim());
@@ -133,7 +181,6 @@ ${sanitizedMessage}
       );
     }
 
-    // Wysłanie automatycznej odpowiedzi do nadawcy
     const { error: autoReplyError } = await resend.emails.send({
       from: emailFrom,
       to: email,

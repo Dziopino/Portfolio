@@ -1,11 +1,12 @@
 "use client";
 
-import React, {type FormEvent, useState} from 'react';
+import React, {type FormEvent, useState, useEffect, useRef} from 'react';
 
 interface FormData {
   name: string;
   email: string;
   message: string;
+  honeypot: string;
 }
 
 interface FormStatus {
@@ -18,6 +19,7 @@ const Contact: React.FC = () => {
     name: '',
     email: '',
     message: '',
+    honeypot: '',
   });
 
   const [status, setStatus] = useState<FormStatus>({
@@ -25,8 +27,37 @@ const Contact: React.FC = () => {
     message: '',
   });
 
+
+    // eslint-disable-next-line react-hooks/purity
+  const formMountTime = useRef<number>(Date.now());
+
+  const [hasInteracted, setHasInteracted] = useState(false);
+
+  useEffect(() => {
+    formMountTime.current = Date.now();
+  }, []);
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (formData.honeypot) {
+      console.warn('Bot detected: honeypot filled');
+      setStatus({type: 'error', message: 'Wystąpił błąd. Spróbuj ponownie.',});
+      return;
+    }
+
+    const timeSinceMount = Date.now() - formMountTime.current;
+    if (timeSinceMount < 3000) {
+      console.warn('Bot detected: form submitted too quickly');
+      setStatus({type: 'error', message: 'Proszę poświęcić chwilę na wypełnienie formularza.',});
+      return;
+    }
+
+    if (!hasInteracted) {
+      console.warn('Bot detected: no interaction detected');
+      setStatus({type: 'error', message: 'Wystąpił błąd walidacji. Spróbuj ponownie.',});
+      return;
+    }
 
     if (!formData.name.trim() || !formData.email.trim() || !formData.message.trim()) {
       setStatus({
@@ -53,24 +84,46 @@ const Contact: React.FC = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          message: formData.message,
+          timestamp: formMountTime.current,
+          submittedAt: Date.now(),
+        }),
       });
 
+      const data = await response.json();
+
       if (response.ok) {
-        setStatus({type: 'success', message: 'Wiadomość została wysłana! Odpowiem najszybciej jak to możliwe.',});
-        setFormData({ name: '', email: '', message: '' });
+        setStatus({
+          type: 'success',
+          message: 'Wiadomość została wysłana! Odpowiem najszybciej jak to możliwe.',
+        });
+        setFormData({ name: '', email: '', message: '', honeypot: '' });
+        setHasInteracted(false);
+        formMountTime.current = Date.now();
+      } else if (response.status === 429) {
+        setStatus({
+          type: 'error',
+          message: data.error || 'Zbyt wiele prób. Spróbuj ponownie później.',
+        });
       } else {
-        throw new Error('Failed to send message');
+        throw new Error(data.error || 'Failed to send message');
       }
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
-      setStatus({type: 'error', message: 'Wystąpił błąd podczas wysyłania wiadomości. Proszę spróbować ponownie lub skontaktować się bezpośrednio przez email.',});
+      setStatus({
+        type: 'error',
+        message: 'Wystąpił błąd podczas wysyłania wiadomości. Proszę spróbować ponownie lub skontaktować się bezpośrednio przez email.',
+      });
     }
   };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
+    setHasInteracted(true); // Track user interaction
+
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
@@ -123,6 +176,11 @@ const Contact: React.FC = () => {
 
         <div className="card-blur rounded-2xl p-8 md:p-12 animate-fade-in-up">
           <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="hidden" aria-hidden="true">
+              <label htmlFor="website">Website</label>
+              <input type="text" id="website" name="honeypot" value={formData.honeypot} onChange={handleChange} tabIndex={-1} autoComplete="off"/>
+            </div>
+
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-2">Imię i Nazwisko</label>
               <input type="text" id="name" name="name" value={formData.name} onChange={handleChange} className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all duration-200" placeholder="Jan Kowalski" required/>
