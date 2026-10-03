@@ -100,10 +100,10 @@ const About: React.FC = () => {
                 <p className="text-gray-400 leading-relaxed">
                   Podchodzę do programowania z{' '}
                   <span className="text-cyan-400 font-medium">bezwzględną dyscypliną</span>{' '}
-                  wzorowaną na treningach siłowych. Stale poszukuję nowych
+                  Stale poszukuję nowych
                   technologii, uczę się najlepszych praktyk i szybko
                   adaptuję się do zmieniającego się środowiska programistycznego.{' '}
-                  <span className="text-cyan-400 font-medium">Posiadam prawo jazdy kat. B1 i własny samochód</span>{' '}
+                  <span className="text-cyan-400 font-medium">Posiadam prawo jazdy kat. B i własny samochód</span>{' '}
                   - obecnie aktywnie poszukuję możliwości rozwoju zawodowego w{' '}
                   <span className="text-cyan-400 font-medium">Warszawie</span>.
                 </p>

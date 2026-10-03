@@ -44,7 +44,7 @@ const Footer: React.FC = () => {
                   <p className="text-gray-400 text-sm">
                       Zbudowane z{' '}
                       <span className="text-red-500 animate-pulse">❤️</span> przy użyciu{' '}
-                      <span className="text-white font-medium">Next.js</span>,{' '}
+                      <span className="text-purple-400 font-medium">Next.js</span>,{' '}
                       <span className="text-blue-400 font-medium">TypeScript</span> i{' '}
                       <span className="text-teal-400 font-medium">Tailwind CSS</span>
                   </p>
