@@ -1,10 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 
 const Navbar: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -16,10 +19,16 @@ const Navbar: React.FC = () => {
   }, []);
 
   const scrollToSection = (sectionId: string) => {
+    setMobileMenuOpen(false);
+
+    if (pathname !== '/') {
+      router.push(`/#${sectionId}`);
+      return;
+    }
+
     const element = document.getElementById(sectionId);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
-      setMobileMenuOpen(false);
     }
   };
 

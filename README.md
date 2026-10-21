@@ -25,6 +25,7 @@
 - [Struktura Projektu](#-struktura-projektu)
 - [Sekcje Portfolio](#-sekcje-portfolio)
 - [System Email](#-system-email)
+- [Polityka Prywatności (RODO)](#-polityka-prywatności-rodo)
 - [Deployment](#-deployment)
 - [Kontakt](#-kontakt)
 
@@ -42,6 +43,7 @@ Profesjonalne, responsywne portfolio stworzone z wykorzystaniem najnowszych tech
 - **🔒 Bezpieczne** - XSS protection, walidacja danych, sanityzacja HTML
 - **📧 Zaawansowany system email** - Automatyczne potwierdzenia i powiadomienia
 - **♿ Accessibility** - ARIA labels, semantic HTML, keyboard navigation
+- **🔐 Zgodność z RODO** - Podstrona z polityką prywatności i klauzula zgody przy formularzu
 
 ---
 
@@ -57,7 +59,8 @@ Profesjonalne, responsywne portfolio stworzone z wykorzystaniem najnowszych tech
 | **Projects** | Showcase najważniejszych projektów |
 | **Tech Stack** | Prezentacja umiejętności technicznych |
 | **Qualifications** | Wykształcenie i certyfikaty |
-| **Contact** | Interaktywny formularz kontaktowy |
+| **Contact** | Formularz kontaktowy z klauzulą zgody RODO |
+| **Polityka prywatności** | Osobna trasa `/polityka-prywatnosci` (nie sekcja na stronie głównej) |
 
 ### 📧 System Kontaktowy
 
@@ -123,6 +126,7 @@ Upewnij się, że masz zainstalowane:
 - **Node.js** 18.17 lub nowszy
 - **npm** / **pnpm** / **yarn**
 - Konto w [Resend](https://resend.com) (do funkcjonalności email)
+- Konto w [Upstash](https://console.upstash.com) z bazą Redis (do rate limitingu formularza)
 
 ### Instalacja
 
@@ -154,7 +158,13 @@ RESEND_API_KEY=re_your_api_key_here
 # Email Configuration
 EMAIL_FROM=kontakt@twojadomena.pl
 EMAIL_TO=twoj.email@gmail.com
+
+# Upstash Redis (rate limiting)
+UPSTASH_REDIS_REST_URL=https://your-instance.upstash.io
+UPSTASH_REDIS_REST_TOKEN=your_rest_token
 ```
+
+> ⚠️ Rate limiting działa tylko gdy ustawione są obie zmienne Upstash. Bez nich `lib/anti-spam.ts` loguje ostrzeżenie `Redis credentials not configured, rate limiting disabled` i przepuszcza każde zgłoszenie — formularz działa, ale bez ograniczenia 3 wiadomości/godzinę.
 
 > 💡 **Jak uzyskać RESEND_API_KEY?**
 > 1. Załóż darmowe konto na [resend.com](https://resend.com)
@@ -208,6 +218,8 @@ Edytuj komponenty w `app/components/`:
 - `Qualifications.tsx` - Wykształcenie
 - `Contact.tsx` - Formularz kontaktowy
 
+Treść polityki prywatności: `app/polityka-prywatnosci/page.tsx`. Spis treści generuje tablica `sections` (`id`, `label`), więc dodanie punktu wymaga wpisania go w tej tablicy **i** w JSX z pasującą kotwicą `id`.
+
 ---
 
 ## 📁 Struktura Projektu
@@ -220,17 +232,19 @@ portfolio_next/
 │   │       └── route.ts          # API endpoint dla formularza
 │   ├── components/
 │   │   ├── About.tsx             # Sekcja O mnie
-│   │   ├── Contact.tsx           # Formularz kontaktowy
+│   │   ├── Contact.tsx           # Formularz kontaktowy + klauzula zgody
 │   │   ├── Experience.tsx        # Doświadczenie
-│   │   ├── Footer.tsx            # Stopka
+│   │   ├── Footer.tsx            # Stopka (link do polityki prywatności)
 │   │   ├── Hero.tsx              # Hero section
-│   │   ├── Navbar.tsx            # Nawigacja
+│   │   ├── Navbar.tsx            # Nawigacja (przewijanie po hashu)
 │   │   ├── Projects.tsx          # Projekty
 │   │   ├── Qualifications.tsx    # Kwalifikacje
 │   │   └── TechStack.tsx         # Stack technologiczny
-│   ├── globals.css               # Style globalne
-│   ├── layout.tsx                # Root layout
-│   └── page.tsx                  # Strona główna
+│   ├── polityka-prywatnosci/
+│   │   └── page.tsx              # Podstrona RODO (Server Component + metadata)
+│   ├── globals.css               # Style globalne, warstwa .policy
+│   ├── layout.tsx                # Root layout: Navbar, <main>, Footer
+│   └── page.tsx                  # Strona główna (sekcje portfolio)
 ├── lib/
 │   ├── resend.ts                 # Konfiguracja Resend
 │   └── anti-spam.ts              # Rate limiting i detekcja spamu
@@ -238,10 +252,12 @@ portfolio_next/
 │   └── cv/                       # CV do pobrania
 ├── .env.local                    # Zmienne środowiskowe (nie w repo)
 ├── package.json                  # Dependencje projektu
-├── tailwind.config.ts            # Konfiguracja Tailwind
+├── postcss.config.mjs            # @tailwindcss/postcss (Tailwind v4 bez configa)
 ├── tsconfig.json                 # Konfiguracja TypeScript
 └── README.md                     # Dokumentacja
 ```
+
+> Tailwind CSS 4 nie wymaga `tailwind.config.ts` — motyw i warstwy (`@layer base`, `components`, `utilities`) definiowane są w `app/globals.css`.
 
 ---
 
@@ -270,6 +286,7 @@ Zaawansowany formularz kontaktowy z:
 - Real-time validation
 - Loading states
 - Success/error feedback
+- Klauzulą zgody RODO z linkiem do polityki prywatności
 - Email i telefon kontaktowy
 - Linki do social media
 
@@ -329,6 +346,39 @@ admin      do użytkownika
 
 ---
 
+## 🔐 Polityka Prywatności (RODO)
+
+### Trasa `/polityka-prywatnosci`
+
+Dokument RODO to osobna strona, nie sekcja na stronie głównej — jest za długa, żeby wrzucać ją do layoutu jednostronicowego portfolio.
+
+| Element | Realizacja |
+|---------|------------|
+| **Trasa** | `app/polityka-prywatnosci/page.tsx` |
+| **Typ komponentu** | Server Component (bez `"use client"`) — wymaga tego `export const metadata` |
+| **Metadata** | Osobny `title` i `description` dla tej trasy |
+| **Treść** | 10 punktów + spis treści z kotwicami (`#administrator`, `#cele`, ...) |
+| **Typografia** | Warstwa `.policy` w `app/globals.css` (`@layer components` + `@apply`) |
+| **Dostęp do polityki** | Klauzula pod formularzem (`Contact.tsx`) i link w stopce (`Footer.tsx`) |
+
+Klauzula zgody wyświetlana pod formularzem (tekst w `app/components/Contact.tsx`):
+
+> Klikając „Wyślij Wiadomość”, zgadzasz się na przetwarzanie Twoich danych w celu obsługi zapytania. Szczegółowe informacje o tym, jak dbamy o Twoją prywatność, znajdziesz w naszej Polityce Prywatności.
+
+Aplikacja nie prowadzi bazy danych — treść zgłoszenia przekazywana jest wyłącznie e-mailem (Resend), więc samo kliknięcie przycisku nigdzie nie jest zapisywane.
+
+### Nawigacja między trasami
+
+Navbar i Footer żyją w `app/layout.tsx`, więc są wspólne dla obu tras. Wynikają z tego trzy rzeczy:
+
+- `Footer.tsx` ma `"use client"` — po przeniesieniu do layoutu serverowego rok w copyrightzie liczyłby się raz przy buildzie i przestałby się aktualizować.
+- Przyciski sekcji w `Navbar.tsx` sprawdzają `usePathname()`: na stronie głównej robią `scrollIntoView({ behavior: 'smooth' })`, a z podstrony `router.push('/#sekcja')` — Next 16 sam odpala wtedy natywne hash scroll. `router.push` nie przyjmuje stanu, więc nie da się tu przenieść triku z `location.state` z react-router.
+- `scroll-padding-top: 5rem` na `html` offsetuje sticky navbar (64 px), a `data-scroll-behavior="smooth"` na `<html>` sprawia, że przejścia między trasami przeskakują natychmiast, natomiast kliknięcia kotwic zostają płynne.
+
+> ⚠️ **Ograniczenie:** wejście od razu w adres z hashem (np. `filipdziopa.tech/#contact` wklejony w nową kartkę) ładuje stronę na górze. Przeglądarka próbuje przewinąć do kotwicy podczas parsowania HTML-a, czyli zanim komponenty klienckie ułożą sekcje. Nawigacja wewnątrz aplikacji działa poprawnie.
+
+---
+
 ## 🚀 Deployment
 
 ### Vercel (Zalecane)
@@ -351,6 +401,8 @@ git push origin main
 RESEND_API_KEY=re_your_api_key
 EMAIL_FROM=kontakt@twojadomena.pl
 EMAIL_TO=twoj.email@gmail.com
+UPSTASH_REDIS_REST_URL=https://your-instance.upstash.io
+UPSTASH_REDIS_REST_TOKEN=your_rest_token
 ```
 
 ### Inne Platformy
@@ -381,9 +433,9 @@ npm run start
 - [ ] Blog section
 - [ ] Multi-language support (EN/PL)
 - [ ] Analytics integration (Google Analytics / Plausible)
-- [ ] SEO optimization z meta tags
+- [x] SEO optimization z meta tags
 - [ ] PWA support
-- [ ] Rate limiting dla API
+- [x] Rate limiting dla API
 - [ ] Admin dashboard do zarządzania treścią
 - [ ] Sitemap i robots.txt
 

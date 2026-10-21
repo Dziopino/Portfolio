@@ -1,6 +1,7 @@
 "use client";
 
 import React, {type FormEvent, useState, useEffect, useRef} from 'react';
+import Link from 'next/link';
 
 interface FormData {
   name: string;
@@ -229,6 +230,12 @@ const Contact: React.FC = () => {
               )}
             </button>
           </form>
+
+          <p className="mt-8 pt-6 border-t border-white/5 text-center text-xs sm:text-sm leading-relaxed text-gray-500">
+            Klikając „Wyślij Wiadomość”, zgadzasz się na przetwarzanie Twoich danych w celu obsługi zapytania. Szczegółowe informacje o tym, jak dbamy o Twoją prywatność, znajdziesz w naszej{' '}
+            <Link href="/polityka-prywatnosci" className="text-cyan-400 underline decoration-cyan-500/30 underline-offset-2 transition-colors hover:text-cyan-300 hover:decoration-cyan-400">Polityce Prywatności</Link>
+            .
+          </p>
         </div>
 
         <div className="mt-12 text-center">

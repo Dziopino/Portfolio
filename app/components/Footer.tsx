@@ -1,4 +1,7 @@
+"use client";
+
 import React from 'react';
+import Link from 'next/link';
 
 const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
@@ -40,7 +43,7 @@ const Footer: React.FC = () => {
                   </div>
               </div>
 
-              <div className="mt-8 pt-6 border-t border-white/5 text-center">
+              <div className="mt-8 pt-6 border-t border-white/5 text-center space-y-3">
                   <p className="text-gray-400 text-sm">
                       Zbudowane z{' '}
                       <span className="text-red-500 animate-pulse">❤️</span> przy użyciu{' '}
@@ -48,6 +51,12 @@ const Footer: React.FC = () => {
                       <span className="text-blue-400 font-medium">TypeScript</span> i{' '}
                       <span className="text-teal-400 font-medium">Tailwind CSS</span>
                   </p>
+                  <Link
+                      href="/polityka-prywatnosci"
+                      className="inline-block text-gray-500 text-sm hover:text-cyan-400 transition-colors duration-200"
+                  >
+                      Polityka prywatności
+                  </Link>
               </div>
           </div>
       </footer>

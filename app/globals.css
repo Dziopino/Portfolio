@@ -9,11 +9,42 @@
 
     html {
         scroll-behavior: smooth;
+        scroll-padding-top: 5rem;
     }
 
     button:not(:disabled, [aria-disabled="true"]),
     [role="button"]:not(:disabled, [aria-disabled="true"]) {
         cursor: pointer;
+    }
+}
+
+@layer components {
+    .policy h2 {
+        @apply pt-2 text-2xl font-semibold text-white;
+    }
+
+    .policy h3 {
+        @apply mt-8 text-lg font-medium text-cyan-300;
+    }
+
+    .policy p {
+        @apply mt-4 leading-relaxed text-gray-400;
+    }
+
+    .policy ul {
+        @apply mt-4 list-disc space-y-2 pl-6 text-gray-400;
+    }
+
+    .policy ol {
+        @apply mt-4 list-decimal space-y-3 pl-6 text-gray-400;
+    }
+
+    .policy strong {
+        @apply font-semibold text-gray-200;
+    }
+
+    .policy a {
+        @apply text-cyan-400 underline decoration-cyan-500/30 underline-offset-2 transition-colors hover:text-cyan-300 hover:decoration-cyan-400;
     }
 }
 
